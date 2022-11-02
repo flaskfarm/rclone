@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block content %}
+
+<form id="tmp" class="form-inline" style="text-align:left">
+  <div class="container-fluid row " style="padding-top: 10px; padding-bottom:10px; align-items: center;">
+    <strong>Days 입력 (0이면 전체삭제) </strong>
+    <span style="padding-left:10px;"></span>
+    <input id="days" type="text" class="form-control form-control-sm" value="0">
+    <span style="padding-left:10px;"></span>
+    <button id="db_delete_btn" class="btn btn-sm btn-outline-primary" >DB 삭제</button>
+  </div>
+</form>
+
+<form id="form_search" class="form-inline" style="text-align:left">
+  <div class="container-fluid row show-grid">
+    <span class="col-md-6">
+      <select id="order" name="order" class="form-control form-control-sm">
+        <option value="desc">최근순</option>
+        <option value="asc">오래된순</option>
+      </select>
+      <select id="option1" name="option1" class="form-control form-control-sm">
+        <option value="all">전체</option>
+        <option value="completed">완료</option>
+        <option value="incompleted">미완료</option>
+      </select>
+      <select id="option2" name="option2" class="form-control form-control-sm">
+      {% for item in arg['job_list'] %}
+        {% if value is not none and value == item[0] %}
+        <option value="{{ item[0] }}" selected>{{item[1]}}</option>
+        {% else %}
+        <option value="{{ item[0] }}">{{item[1]}}</option>
+      {% endif %}
+    {% endfor %}
+      </select>
+    </span>
+    <span class="col-md-6">
+      <input id="keyword" name="keyword" class="form-control form-control-sm w-75" type="text" placeholder="" aria-label="Search">
+      {{ macros.m_button_group([['globalSearchSearchBtn', '검색'], ['globalSearchResetBtn', '리셋']])}}
+    </span>
+  </div>
+</form>
+<div id='page1'></div>
+
+{{ macros.m_row_start('2') }}
+{{ macros.m_row_end() }}
+
+<table id="result_table" class="table table-sm tableRowHover">
+  <thead class="thead-dark">
+    <tr>
+      <th style="width:5%; text-align:center;">ID</th>
+      <th style="width:5%; text-align:center;">JobID</th>
+      <th style="width:15%; text-align:center;">시작</th>
+      <th style="width:15%; text-align:center;">종료</th>
+      <th style="width:25%; text-align:center;">폴더</th>
+      <th style="width:20%; text-align:center;">파일</th>
+      <th style="width:5%; text-align:center;">크기</th>
+      <th style="width:5%; text-align:center;">속도</th>
+      <th style="width:5%; text-align:center;"></th>
+
+    </tr>
+  </thead>
+  <tbody id="list"></tbody>
+</table>
+<div id='page2'></div>
+
+
+<script type="text/javascript">
+var last_list_option = "{{arg['rclone_file_last_list_option']}}";
+var start_job_id = "{{arg['start_job_id']}}";
+
+$(document).ready(function(){
+  if (start_job_id == '') {
+    tmp = last_list_option.split('|');
+    if (tmp.length == 5) {
+      $("#order").val(tmp[0]);
+      $("#keyword").val(tmp[2]);
+      $("#option1").val(tmp[3]);
+      $("#option2").val(tmp[4]);
+      globalRequestSearch(tmp[1]);
+    } else {
+      globalRequestSearch('1');
+    }
+  } else {
+    $("#option2").val(start_job_id);
+    globalRequestSearch('1');
+  }
+});
+
+function make_list(data) {
+  str = '';
+  if (data.length  == 0)
+    str += '<tr><td colspan="6"><h4>데이터가 없습니다.</h4></td></tr>';
+
+  for (i in data) {
+    console.log(data[i])
+    str += '<tr class="" style="cursor: pointer;">';
+    str += j_td(data[i].id, '5');
+    str += j_td(data[i].job_id, '5');
+    str += j_td(data[i].created_time, '15');
+    str += j_td((data[i].finish_time!=null)?data[i].finish_time:'', '15');
+    str += j_td((data[i].folder!=null)?data[i].folder:'', '25', 'left');
+    str += j_td(data[i].name, '20', 'left');
+    str += j_td(data[i].size, '5', 'right');
+    str += j_td(data[i].speed, '5', 'right');
+    str += j_td(j_button('remove_btn', '삭제', {'id':data[i].id}, 'danger', true, true), '5', 'right');
+    str += '</tr>'
+  }
+  str += '</table>';
+  $('#list').html(str);
+}
+
+$("body").on('change', '#order', function(e){
+  globalRequestSearch(1);
+});
+
+$("body").on('change', '#option1', function(e){
+  globalRequestSearch(1);
+});
+
+$("body").on('change', '#option2', function(e){
+  globalRequestSearch(1);
+});
+
+$("body").on('click', '#db_delete_btn', function(e){
+  e.preventDefault();
+  globalConfirmModal('DB 삭제', "자료를 삭제하시겠습니까?", function() {
+    globalSendCommandPage("db_delete", $('#days').val(), null, null, function(ret) {
+      globalRequestSearch(current_page);
+    });
+  });
+});
+
+$("body").on('click', '#remove_btn', function(e) {
+  e.preventDefault();
+  globalSendCommandPage("db_delete_item", $(this).data('id'));
+  globalRequestSearch(current_page);
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+$('body').on('click', '#db_remove_completed_btn', (e) => {
+  e.preventDefault();
+  globalSendCommand("program_list_command", "remove_completed");
+  globalRequestSearch('1');
+});
+
+$('body').on('click', '#db_remove_incomplete_btn', (e) => {
+  e.preventDefault();
+  globalSendCommand("program_list_command", "remove_incomplete");
+  globalRequestSearch('1');
+});
+
+$('body').on('click', '#db_add_incomplete_btn', (e) => {
+  e.preventDefault();
+  console.log(current_page)
+  globalSendCommand("program_list_command", "add_incomplete");
+  globalRequestSearch(current_page);
+});
+
+
+
+$('body').on('click', '#request_btn', (e) => {
+  e.preventDefault();
+  let prog_id = e.target.dataset.program_id;   
+  if (prog_id) {
+      window.location = `/wavve/program/select?code=${prog_id}`;
+  }
+});
+
+$('body').on('mouseover', '.head_pic', (e)=>{
+  e.target.nextElementSibling.classList.remove('before');
+  e.target.nextElementSibling.classList.add('after');
+});
+
+$('body').on('mouseout', '.head_pic', (e)=>{
+  e.target.nextElementSibling.classList.remove('after');
+  e.target.nextElementSibling.classList.add('before');
+});
+
+
+</script>    
+
+
+{% endblock %}

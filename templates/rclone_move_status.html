@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block content %}
+{{ macros.setting_select_empty('job_select', '작업 선택') }}
+{{ macros.m_hr() }}
+{{ macros.info_text('summary', '상태', value='') }}
+{{ macros.info_text_and_buttons('job_name', '작업', [['stop_btn', '중지']]) }}
+
+{{ macros.setting_input_textarea('command', '명령', col='11', disabled=True, row='5') }}
+{{ macros.setting_progress('data_progress', '데이터') }}
+{{ macros.setting_progress('file_progress', '파일') }}
+{{ macros.info_text('trans_speed', '전송 속도') }}
+{{ macros.info_text('rt_time', '전체 남은 시간') }}
+{{ macros.info_text('r_time', '진행 시간') }}
+{{ macros.info_text('error', 'Errors') }}
+
+<div id="tab_div"></div>
+
+<script type="text/javascript">
+var current_job_id = null;
+var start_job_id = "{{arg['start_job_id']}}";
+if (start_job_id != '') current_job_id = start_job_id;
+
+$(document).ready(function(){
+  var socket = io.connect(window.location.href);
+
+  socket.on('start', function(data){
+    globalSendCommandPage('current_status');
+  });
+
+  socket.on('status', function(data){
+    current_data = data;
+    make_status(data)
+  });
+
+  socket.on('job', function(data){
+    current_data = data;
+    make_job_select(current_data);
+    make_status(current_data);
+  });
+});
+
+
+$("body").on('change', '#job_select', function(e){
+  e.preventDefault();
+  current_job_id = $(this).val();
+  make_job_select(current_data);
+  make_status(current_data);
+});
+
+
+function make_job_select(status) {
+  var data = null;
+  if (current_job_id == null) {
+    current_job_id = status.LAST;
+  }
+  str = '<select id="job_select" class="form-control form-control-sm">';
+  for (var key in status) {
+    if (key == 'LAST') continue;
+    data = status[key];
+    var label = data.job_data.id + ' | ' + data.job_data.name + ' | ' + data.job_data.description;
+    if (current_job_id == '' + key) {
+      str += '<option value="' + key + '" selected >' + label + '</option>';
+    } else {
+      str += '<option value="' + key + '">' + label + '</option>';
+    }
+  }
+  $("#job_select_div").html(str);
+
+  data = status[current_job_id];
+  if (data != null) {
+    if (data.is_completed) {
+      $("#summary").html("종료 (" + data.completed_time + ')');
+    } else {
+      $("#summary").html("실행중");
+    }
+    $("#job_name").html('Name: ' + data.job_data.name + ' & ID: ' + data.job_data.id + ' Desc: ' + data.job_data.description);
+    $("#command").val(data.job_data.process_command);
+  }
+}
+  
+function make_status(status) {
+  if ($("#job_select_div").html() == '') {
+    make_job_select(status);
+    str = j_tab_make([
+      ['now', '전송중', true], 
+      ['completed', '전송 완료', false], 
+      ['log', '로그', false]
+    ]);
+    $("#tab_div").html(str);
+  }
+
+  if (current_job_id == null) {
+    notify("작업이 없습니다.", 'warning');
+    return;
+  }
+
+  data = status[current_job_id];
+  if (data == null) {
+    notify("진행한 작업이 없습니다.", 'warning');
+    return;
+  }
+
+  $("#data_progress").css('width', data.trans_percent+ '%');
+  $("#data_progress_label").html(data.trans_data_current + ' / ' + data.trans_total_size + ' (' + data.trans_percent+ '%)');
+  $("#file_progress").css('width', data.file_percent+ '%');
+  if (data.file_percent == null) {
+    $("#file_progress_label").html(data.file_1 + ' / ' + data.file_2);
+  } else {
+    $("#file_progress_label").html(data.file_1 + ' / ' + data.file_2 + ' (' + data.file_percent+ '%)');
+  }
+  
+  $("#trans_speed").html(data.trans_speed);
+  $("#rt_time").html(((data.rt_hour == null) ? "00" : FormatNumberLength(data.rt_hour, 2)) + ':' + ((data.rt_min == null) ? "00" : FormatNumberLength(data.rt_min, 2)) + ':' + ((data.rt_sec == null) ? "00" : FormatNumberLength(data.rt_sec, 2)));
+  $("#r_time").html(((data.r_hour == null) ? "00" : FormatNumberLength(data.r_hour, 2)) + ':' + ((data.r_min == null) ? "00" : FormatNumberLength(data.r_min, 2)) + ':' + ((data.r_sec == null) ? "00" : FormatNumberLength(data.r_sec, 2)));
+  $("#error").html(data.error);
+
+  ret = make_file_list(data.files, false);
+  $("#tab_head_now").html("전송중: " + ret[0] + '개');
+  $("#tab_content_now").html(ret[1]);
+
+  ret = make_file_list(data.files, true);
+  $("#tab_head_completed").html("전송 완료: " + ret[0] + '개');
+  $("#tab_content_completed").html(ret[1]);
+  
+  str = '<h5>로그</h5>';
+  str += '<pre style="white-space: pre-line;">';
+  for (var i in data.log) {
+    str += data.log[i] + '\n';
+  }
+  str += '</pre>';
+  $("#tab_content_log").html(str);
+}
+
+function make_file_list(data, finished ) {
+  str = '';
+  var count = 0;
+  for (i in data) {
+    if (finished == false && data[i].percent == '100') {
+      continue;
+    } else if (finished && data[i].percent != '100') {
+      continue
+    }
+    if (count != 0) str += j_hr(0);
+    count += 1
+    str += j_row_start(2);
+    str += j_col(1, (parseInt(i)+1), 'center');
+    if (data[i].folder == null) {
+      tmp = data[i].name
+      str += j_col(6, tmp);
+    } else {
+      str += j_col(3, data[i].folder);
+      str += j_col(3, data[i].name);
+    }
+    if (finished) {
+      str += j_col(2, data[i].size);
+      str += j_col(2, data[i].speed);
+    } else {
+      tmp = j_progress('progress_'+i, data[i].percent, '' + data[i].size + ' - ' + 
+      '' + data[i].speed + ' - ' + 
+      ((data[i].rt_hour == null) ? "00" : FormatNumberLength(data[i].rt_hour, 2)) + ':' + ((data[i].rt_min == null) ? "00" : FormatNumberLength(data[i].rt_min, 2)) + ':' + ((data[i].rt_sec == null) ? "00" : FormatNumberLength(data[i].rt_sec, 2)) + ' - ' +
+      data[i].percent + '%')
+      str += j_col(5, tmp);
+    }
+    str += j_row_end();
+    
+  }
+  //str += j_hr_black(0);
+  tmp = (finished) ? '전송 완료: ' : '전송중: ';
+  tmp = '<h5>' + tmp + ' ' + count + '개</h5>';
+  return [count, tmp + str];
+}
+
+$("body").on('click', '#stop_btn', function(e){
+  e.preventDefault();
+  globalSendCommandPage('process_stop', current_job_id);
+});
+
+</script>    
+{% endblock %}

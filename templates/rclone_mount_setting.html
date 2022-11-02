@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block content %}
+
+{{ macros.m_button_group([['mount_add_btn', 'SERVE 추가'], ['globalReloadBtn', '새로고침']])}}
+{{ macros.m_row_start('5') }}
+{{ macros.m_row_end() }}
+<div id="mount_list_div"></div>
+
+{{ macros.m_modal_start('mount_add_modal', 'SERVE 추가', 'modal-lg') }}
+  <form id='mount_setting'>
+  {{ macros.setting_input_text('mount_name', 'Name', desc=['생략시 ID']) }}
+  {{ macros.setting_input_text_and_buttons('mount_remote_path', 'Remote Path', [['mount_remote_path_ls_btn', '폴더 확인']], value='/', desc=None) }}
+  {{ macros.setting_input_text_and_buttons('mount_local_path', 'Local Path', [['mount_local_path_ls_btn', '폴더 확인']], value='/', desc=['local or remote path']) }}
+  {{ macros.setting_input_textarea('mount_option', '옵션', row="10") }}
+  {{ macros.setting_input_text('mount_cache_dir', '--cache_dir', value='', desc=['값이 없는 경우 오동작 방지 차원에서 실행 하지 않습니다.']) }}
+  {{ macros.setting_radio_with_value('mount_start_mode', '시작시 자동 실행', [['none', '안함'], ['all', '실행']]) }}
+  {{ macros.setting_radio_with_value('mount_finish_mode', '종료시 중단', [['none', '안함'], ['all', '중단']]) }}
+  </form>
+{{ macros.m_modal_end_with_button(
+  [
+    ['show_remote_btn', '리모트 JSON'], 
+    ['mount_save_btn', '저장'], 
+  ]
+) }}
+
+<script type="text/javascript">
+//hideMenuPage();
+
+$(document).ready(function() {
+  refresh();
+  $.contextMenu({
+    selector: '.context_menu',
+    trigger: 'left',
+    callback: function(key, options) {
+      db_id = $(this).data('id');
+      idx = $(this).data('idx');
+      info = current_data.mount_list[idx];
+      if (key == 'delete') {
+        globalConfirmModal(db_id + ' SERVE 삭제', "SERVE 정보를 삭제하시겠습니까?", function() {
+          globalSendCommand("mount_delete", db_id, null, null, function(ret) {
+            if (ret.ret == 'success') {
+              refresh();
+            }
+          });
+        });
+      } else if (key == 'edit') {
+        $('#mount_save_btn').data("id", info.id);
+        $('#mount_name').val(info.name);
+        $('#mount_remote_path').val(info.remote_path);
+        $('#mount_local_path').val(info.local_path);
+        $('#mount_option').val(info.option);
+        $('#mount_cache_dir').val(info.cache_dir);
+        $('input:radio[name="mount_start_mode"][value="'+info.start_mode+'"]').attr('checked',true);
+        $('input:radio[name="mount_finish_mode"][value="'+info.finish_mode+'"]').attr('checked',true);
+        $('#mount_add_modal_title').html("SERVE 정보 수정");
+        $("#mount_add_modal").modal({backdrop: 'static', keyboard: false}, 'show');
+      } else if (key == 'ls_source') {
+        globalSendCommand("ls", info.remote_path);
+      } else if (key == 'ls_target') {
+        globalSendCommand("ls", info.local_path);
+      } else if (key == 'execute') {
+        globalSendCommand("execute", info.id);
+      } else if (key == 'stop') {
+        globalSendCommand("process_stop", info.id);
+      } else if (key == 'log') {
+        window.location.href = '/system/all_log/list?filename=rclone_mount_' + info.id + '.log';
+      }
+    },
+    items: {
+      "ls_source": {name: "소스 폴더 확인", icon: "fa-folder"},
+      "ls_target": {name: "타겟 폴더 확인", icon: "fa-folder"},
+      "sep1": "---------",
+      "edit": {name: "SERVE 정보 편집", icon: "edit"},
+      "delete": {name: "SERVE 정보 삭제", icon: "delete"},
+      "sep2": "---------",
+      "execute": {name: "SERVE 실행", icon: "fa-play"},
+      "stop": {name: "SERVE 중지", icon: "fa-stop"},
+      "sep3": "---------",
+      "log": {name: "로그", icon: "edit"},
+    }
+  });
+});
+
+function refresh() {
+  make_mount_list(null);
+  globalSendCommand('mount_list', null, null, null, function(ret) {
+    current_data = ret.data;
+    $('#mount_option').val(current_data['default']);
+    make_mount_list(current_data.mount_list);
+  });
+}
+
+$("body").on('click', '#mount_add_btn', function(e){
+  e.preventDefault();
+  $('#mount_save_btn').data("id", "-1");
+  $('#mount_name').val("");
+  $('#mount_remote_path').val("/");
+  $('#mount_local_path').val("/");
+  $('#mount_option_user').val("");
+  $('input:radio[name="mount_start_mode"][value="none"]').attr('checked',true);
+  $('input:radio[name="mount_finish_mode"][value="all"]').attr('checked',true);
+  $("#mount_add_modal").modal({backdrop: 'static', keyboard: false}, 'show');
+}); 
+
+$("body").on('click', '#mount_save_btn', function(e) {
+  e.preventDefault();
+  id = $('#mount_save_btn').data('id');
+  var formData = getFormdata('#mount_setting');
+  formData += '&id=' + id;
+  globalSendCommand("mount_save", formData, null, null, function(ret){
+    console.log(ret)
+    if (ret.ret == 'success') {
+      $("#mount_add_modal").modal('hide');
+      refresh();
+    }
+  });
+});
+
+function make_mount_list(data) {
+  str = '';
+  str = '<table id="result_table" class="table table-sm tableRowHover"  ><thead class="thead-dark"><tr>';
+  str += j_th('ID', '5');
+  str += j_th('Name', '5');
+  str += j_th('Path', '40');
+  str += j_th('시작시', '15');
+  str += j_th('재시작&종료시', '15');
+  str += j_th('Process', '10');
+  str += j_th('Action', '10');
+  str += '</tr></thead><tbody id="list">';
+  if (data == null) str += '<tr><td colspan="6"><h4>프로세스 찾는 중</h4></td></tr>';
+  else {
+    if (data.length == 0) str += '<tr><td colspan="6"><h4>작업이 없습니다.</h4></td></tr>';
+
+    for (i in data) {
+      console.log(data[i])
+      str += '<tr class="chover" style="cursor: pointer;" data-toggle="collapse" data-target="#collapse_' + i + '" aria-expanded="true" >';
+      str += j_td(data[i].id, '5');
+      str += j_td(data[i].name, '5');
+      tmp = j_row_start();
+      tmp += j_info_text("Source", data[i].remote_path, '3', '9');
+      tmp += j_info_text("Target", data[i].local_path, '3', '9');
+      tmp += j_row_end();
+      str += j_td(tmp, '40');
+      tmp = '';
+      if (data[i].start_mode == 'none') tmp = '안함';
+      else if (data[i].start_mode == 'all') tmp = '실행';
+      str += j_td(tmp, '15');
+      tmp = '';
+      if (data[i].finish_mode == 'none') tmp = '안함';
+      else if (data[i].finish_mode == 'all') tmp = '중단';
+      str += j_td(tmp, '15');
+      if (data[i].process) {
+        str += j_td('Yes', '10');
+      } else {
+        str += j_td('-', '10');
+      }
+      tmp = j_button('mount_execute_btn', '메뉴', {'id':data[i].id, 'idx':i}, 'warning', false, false, 'context_menu');
+      str += j_td(tmp, '10');
+      str += '</tr>';
+      str += '<tr class="collapse tableRowHoverOff" style="cursor: pointer;"  id="collapse_' + i + '">';
+      str += j_td('', '', '', '2');
+      str += '<td colspan="3">';
+      str += j_row_start();
+      str += j_info_text("cache_dir", data[i].cache_dir, '2', '9');
+      str += j_info_text("옵션", data[i].option, '2', '9');
+      str += j_row_end();
+      str += j_td('', '', '', '2');
+      str += '</td>';
+      str += '</tr>'
+    }
+  }
+  str += '</table>';
+  $('#mount_list_div').html(str);
+}
+
+$("body").on('click', '#show_remote_btn', function(e) {
+  e.preventDefault();
+  showModal(current_data.remote_list, "Remote List");
+});
+
+$("body").on('click', '#mount_remote_path_ls_btn', function(e) {
+  e.preventDefault();
+  globalSendCommand("ls", $('#mount_remote_path').val());
+});
+
+$("body").on('click', '#mount_local_path_ls_btn', function(e) {
+  e.preventDefault();
+  globalSendCommand("ls", $('#mount_local_path').val());
+});
+ 
+</script>    
+{% endblock %}

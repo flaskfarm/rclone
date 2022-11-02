@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block content %}
+
+{{ macros.m_button_group([['globalSettingSaveBtn', '설정 저장'], ['refresh_btn', '새로고침'],['web_install_btn', '설치'], ['web_uninstall_btn', '삭제'], ['web_start_btn', '실행'], ['web_stop_btn', '중지'], ['globalOpenBtn', 'Go', [['url','/rclone_web']] ]])}}
+{{ macros.m_row_start('5') }}
+{{ macros.m_row_end() }}
+
+{% if arg['is_web_install'] %}
+  {% set msg = "Installed" %}
+{% else %}
+  {% set msg = "Not Installed" %}
+{% endif %}
+{{ macros.info_text('web_install', '설치 상태', msg) }}
+
+
+{% if arg['is_web_running'] %}
+  {% set msg = "실행중" %}
+{% else %}
+  {% set msg = "미실행" %}
+{% endif %}
+{{ macros.info_text('web_install', '실행 상태', msg) }}
+
+{{ macros.m_hr_black() }}
+
+<form id='setting' name='setting'>
+{{ macros.setting_input_text('web_user', 'Username', value=arg['web_user'], col='3', desc=None) }}
+{{ macros.setting_input_text('web_pass', 'Password', value=arg['web_pass'], col='3', desc=None) }}
+{{ macros.setting_input_int('web_port', 'Rclone 실행 Port', value=arg['web_port'], desc=['Rclone rcd로 실행되는 Port']) }}
+{{ macros.setting_checkbox('web_auto_start', '시작시 자동 실행', value=arg['web_auto_start'], desc=None) }}
+</form>
+
+
+
+<script type="text/javascript">
+$(document).ready(function(){
+});
+
+$("body").on('click', '#refresh_btn', function(e){
+  e.preventDefault();
+  location.reload();
+});
+
+
+$("body").on('click', '#web_install_btn', function(e){
+  e.preventDefault();
+  globalSendCommand('web_install');
+});
+
+$("body").on('click', '#web_uninstall_btn', function(e){
+  e.preventDefault();
+  globalSendCommand('web_uninstall', null, null, null, function(ret){
+    location.reload();
+  });
+});
+
+$("body").on('click', '#web_start_btn', function(e){
+  e.preventDefault();
+  globalSendCommand('web_start');
+});
+
+$("body").on('click', '#web_stop_btn', function(e){
+  e.preventDefault();
+  globalSendCommand('web_stop');
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+$("body").on('click', '#rclone_select_btn', function(e){
+  e.preventDefault();
+  path_data = $(this).data('path_data');
+  globalSelectLocalFile("파일 선택", path_data, function(ret){
+    $('#rclone_path').val(ret);
+  });
+});
+
+$("body").on('click', '#config_select_btn', function(e){
+  e.preventDefault();
+  path_data = $(this).data('path_data');
+  globalSelectLocalFile("파일 선택", path_data, function(ret){
+    $('#rclone_config_path').val(ret);
+  });
+});
+
+
+$("body").on('click', '#rclone_config_btn', function(e){
+  e.preventDefault();
+  globalSendCommand('rclone_config', $('#rclone_path').val(), $('#rclone_config_path').val());
+});
+
+function make_remotes_list(data) {
+  data = data.data;
+  str = ''
+  count = 0;
+  for (i in data) {
+    //console.log(data[i])
+    count = count + 1;
+    str += j_row_start();
+    str += j_col(1, (count), 'center');
+    str += j_col(1, i, 'center');
+    str += j_col(1, data[i].type, 'center');
+    tmp = ''
+    for (key in data[i]) {
+      tmp += j_row_start(padding="0");
+      if (key != 'type') {
+        tmp += j_col(3, key, align='right');
+        if (key == 'token') {
+          //tmp += j_col(9, data[i][key]);
+          tmp += j_col(9, '<pre style="white-space: pre-wrap;">' + JSON.stringify(data[i][key], null, 2) + '</pre>');
+        } else {
+          tmp += j_col(9, data[i][key]);
+        }
+      }
+      tmp += j_row_end();
+    }
+    str += j_col(9, tmp);
+    str += j_row_end();
+    if (i != data.length -1) str += j_hr();
+  }
+  $("#remotes_list_div").html(str);
+}
+</script>    
+{% endblock %}

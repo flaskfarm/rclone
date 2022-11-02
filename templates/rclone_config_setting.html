@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block content %}
+
+{{ macros.m_button_group([['globalSettingSaveBtn', '설정 저장']])}}
+{{ macros.m_row_start('5') }}
+{{ macros.m_row_end() }}
+
+<form id='setting' name='setting'>
+{{ macros.setting_input_text_and_buttons('rclone_path', 'Rclone Path', 
+  [
+    ['rclone_version_btn', '버전확인'], 
+    ['rclone_select_btn', '파일 선택', [ ['path_data', arg['path_data']] ]], 
+  ], value=arg['rclone_path']) }}
+{{ macros.setting_input_text_and_buttons('rclone_config_path', 'Config Path',
+  [
+    ['config_select_btn', '파일 선택', [ ['path_data', arg['path_data']] ]], 
+    ['rclone_config_btn', 'Config'],
+  ], value=arg['config_abspath']) }}
+</form>
+{{ macros.m_hr_head_top() }}
+{{ macros.m_row_start('0') }}
+{{ macros.m_col(1,  macros.m_strong('NO'), 'center') }}
+{{ macros.m_col(1,  macros.m_strong('Name'), 'center') }}
+{{ macros.m_col(1,  macros.m_strong('Type'), 'center') }}
+{{ macros.m_col(9,  macros.m_strong('Detail'), 'center') }}
+{{ macros.m_row_end() }}
+{{ macros.m_hr_head_bottom() }}
+<div id="remotes_list_div"></div>
+
+
+<script type="text/javascript">
+//hideMenuPage();
+
+
+$(document).ready(function(){
+  globalSendCommand('config_list', null, null, null, function(data) {
+    make_remotes_list(data);
+  });
+});
+
+
+$("body").on('click', '#rclone_version_btn', function(e){
+  e.preventDefault();
+  rclone_path = document.getElementById("rclone_path").value;
+  globalSendCommand('rclone_version', $('#rclone_path').val());
+});
+
+
+$("body").on('click', '#rclone_select_btn', function(e){
+  e.preventDefault();
+  path_data = $(this).data('path_data');
+  globalSelectLocalFile("파일 선택", path_data, function(ret){
+    $('#rclone_path').val(ret);
+  });
+});
+
+$("body").on('click', '#config_select_btn', function(e){
+  e.preventDefault();
+  path_data = $(this).data('path_data');
+  globalSelectLocalFile("파일 선택", path_data, function(ret){
+    $('#rclone_config_path').val(ret);
+  });
+});
+
+
+$("body").on('click', '#rclone_config_btn', function(e){
+  e.preventDefault();
+  globalSendCommand('rclone_config', $('#rclone_path').val(), $('#rclone_config_path').val());
+});
+
+function make_remotes_list(data) {
+  data = data.data;
+  str = ''
+  count = 0;
+  for (i in data) {
+    //console.log(data[i])
+    count = count + 1;
+    str += j_row_start();
+    str += j_col(1, (count), 'center');
+    str += j_col(1, i, 'center');
+    str += j_col(1, data[i].type, 'center');
+    tmp = ''
+    for (key in data[i]) {
+      tmp += j_row_start(padding="0");
+      if (key != 'type') {
+        tmp += j_col(3, key, align='right');
+        if (key == 'token') {
+          //tmp += j_col(9, data[i][key]);
+          tmp += j_col(9, '<pre style="white-space: pre-wrap;">' + JSON.stringify(data[i][key], null, 2) + '</pre>');
+        } else {
+          tmp += j_col(9, data[i][key]);
+        }
+      }
+      tmp += j_row_end();
+    }
+    str += j_col(9, tmp);
+    str += j_row_end();
+    if (i != data.length -1) str += j_hr();
+  }
+  $("#remotes_list_div").html(str);
+}
+</script>    
+{% endblock %}

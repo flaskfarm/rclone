@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+{% block content %}
+
+{{ macros.m_button_group([['job_add_btn', '작업 추가']])}}
+{{ macros.m_row_start('5') }}
+{{ macros.m_row_end() }}
+
+<div id="job_list_div"></div>
+
+
+
+<!-- 작업추가 모달 -->
+{{ macros.m_modal_start('job_add_modal', '작업 추가', 'modal-lg') }}
+  <form id='job_setting'>
+  {{ macros.setting_select('job_command', 'Command', [['move', 'Move'],['copy', 'Copy'],['sync', 'Sync']], col='6', desc=None)}}
+  {{ macros.setting_input_text('job_name', 'Name', desc=['목록 검색에서 사용할 이름. 없을시 ID']) }}
+  {{ macros.setting_input_text('job_description', 'Description') }}
+  {{ macros.m_hr() }}
+  {{ macros.setting_input_text_and_buttons('job_source_path', 'Source', [['job_source_path_ls_btn', '폴더 확인']], value='/', desc=['local or remote path']) }}
+  {{ macros.setting_input_text_and_buttons('job_target_path', 'Target', [['job_target_path_ls_btn', '폴더 확인']], value='/', desc=['local or remote path']) }}
+  {{ macros.setting_input_textarea('job_option_static', '고정 옵션', value='') }}
+  {{ macros.setting_input_textarea('job_option_user', '옵션') }}
+  {{ macros.m_hr() }}
+  {{ macros.setting_radio_with_value('job_schedule_mode', '스케쥴링 타입', [['none', '없음'], ['startup', '시작시 한번 실행'], ['scheduler', '스케쥴링']]) }}
+  {{ macros.setting_input_text('job_schedule_interval', '스케쥴링 정보', desc=['Interval(minute 단위)이나 Cron 설정']) }}
+  {{ macros.setting_checkbox('job_schedule_auto_start', '시작시 스케쥴링 등록', desc=['On : 시작시 자동으로 스케쥴러에 등록됩니다.']) }}
+  {{ macros.m_hr() }}
+  {{ macros.setting_input_text('job_system_command_id_before', 'Before CMD_ID', desc=['작업 시작 전에 실행할 시스템 command ID.'], col='3') }}
+  {{ macros.setting_input_text('job_system_command_id_after', 'After CMD_ID', desc=['작업 종료 후 실행할 시스템 command ID.'], col='3') }}
+  </form>
+{{ macros.m_modal_end_with_button(
+  [
+    ['show_remote_btn', '리모트 JSON'], 
+    ['job_save_btn', '작업 저장'], 
+  ]
+) }}
+<!-- END 작업추가 모달 -->
+
+
+
+
+<script type="text/javascript">
+$(document).ready(function() {
+  refresh();
+
+  $.contextMenu({
+    selector: '.context_menu',
+    trigger: 'left',
+    callback: function(key, options) {
+      db_id = $(this).data('id');
+      idx = $(this).data('idx');
+      job = current_data.job_list[idx];
+      if (key == 'delete') {
+        globalConfirmModal(db_id + ' 작업 삭제', "작업을 삭제하시겠습니까?", function() {
+          globalSendCommandPage("job_delete", db_id, null, null, function(ret) {
+            if (ret.ret == 'success') {
+              refresh();
+            }
+          });
+        });
+      } else if (key == 'edit') {
+        
+        $('#job_save_btn').data("id", job.id);
+        $("#job_command").val(job.command);
+        $('#job_name').val(job.name);
+        $('#job_description').val(job.description);
+        $('#job_source_path').val(job.source_path);
+        $('#job_target_path').val(job.target_path);
+        $('#job_option_user').val(job.option_user);
+        $('#job_system_command_id_before').val(job.system_command_id_before);
+        $('#job_system_command_id_after').val(job.system_command_id_after);
+        
+        set_schedule_mode(job.schedule_mode);
+        $('#job_schedule_interval').val(job.schedule_interval);
+        if (job.schedule_auto_start) {
+          $("#job_schedule_auto_start").val('on');
+          $('#job_schedule_auto_start').bootstrapToggle('on')
+        } else {
+          $("#job_schedule_auto_start").val('off');
+          $('#job_schedule_auto_start').bootstrapToggle('off')
+        }
+        $('#job_add_modal_title').html("작업 수정");
+        $("#job_add_modal").modal({backdrop: 'static', keyboard: false}, 'show');
+      } else if (key == 'ls_source') {
+        globalSendCommandPage("ls", job.source_path);
+      } else if (key == 'ls_target') {
+        globalSendCommandPage("ls", job.target_path);
+      } else if (key == 'execute') {
+        globalSendCommandPage("execute", job.id);
+      } else if (key == 'stop') {
+        globalSendCommandPage("process_stop", job.id);
+      } else if (key == 'search') {
+        window.location.href = '/rclone/move/list?job_id=' + job.id;
+      } else if (key == 'status') {
+        window.location.href = '/rclone/move/status?job_id=' + job.id;
+      }
+    },
+    items: {
+      "ls_source": {name: "소스 폴더 확인", icon: "fa-folder"},
+      "ls_target": {name: "타겟 폴더 확인", icon: "fa-folder"},
+      "sep1": "---------",
+      "edit": {name: "작업 편집", icon: "edit"},
+      "delete": {name: "작업 삭제", icon: "delete"},
+      "sep2": "---------",
+      "execute": {name: "실행", icon: "fa-play"},
+      "stop": {name: "중지", icon: "fa-stop"},
+      "sep3": "---------",
+      "status": {name: "상태창", icon: "paste"},
+      "search": {name: "결과 검색", icon: "fa-search"},
+    }
+  });
+});
+
+function refresh() {
+  globalSendCommandPage('config_list', null, null, null, function(ret) {
+    current_data = ret.data;
+    console.log(current_data)
+    $('#job_option_static').val(current_data['default']['static']);
+    make_job_list(current_data.job_list);
+  });
+}
+
+// 상단 작업 추가
+$("body").on('click', '#job_add_btn', function(e){
+  e.preventDefault();
+  $('#job_save_btn').data("id", "-1");
+  command = 'move';
+  $("#job_command").val(command);
+  set_command_type(command);
+  $('#job_name').val("");
+  $('#job_description').val("");
+  $('#job_source_path').val("/");
+  $('#job_target_path').val("/");
+  $('#system_command_id_before').val("");
+  $('#system_command_id_after').val("");
+  
+  set_schedule_mode("none");
+  $('#job_schedule_interval').val("60");
+  $("#job_schedule_auto_start").val('off');
+  $('#job_schedule_auto_start').bootstrapToggle('off')
+  $('#job_save_btn').attr('disabled', false);
+  $('#job_add_modal_title').html("작업 추가");
+  $("#job_add_modal").modal({backdrop: 'static', keyboard: false}, 'show');
+}); 
+
+// 모달 처리
+$('#job_command').change(function() {
+  set_command_type(this.value);
+});
+
+function set_command_type(type) {
+  tmp = current_data['default']['option_' + type];
+  $("#job_option_user").val(tmp);
+}
+
+function set_schedule_mode(mode) {
+  $('input:radio[name="job_schedule_mode"][value="'+mode+'"]').attr('checked',true);
+}
+
+// 작업 저장 버튼
+$("body").on('click', '#job_save_btn', function(e) {
+  e.preventDefault();
+  id = $('#job_save_btn').data('id')
+  var formData = getFormdata('#job_setting');
+  formData += '&id=' + id;
+  globalSendCommandPage("job_save", formData, null, null, function(ret){
+    console.log(ret)
+    if (ret.ret == 'success') {
+      $("#job_add_modal").modal('hide');
+      refresh();
+    }
+  });
+});
+
+$("body").on('click', '#show_remote_btn', function(e) {
+  e.preventDefault();
+  showModal(current_data.remote_list, "Remote List");
+});
+
+$("body").on('click', '#job_source_path_ls_btn', function(e) {
+  e.preventDefault();
+  globalSendCommandPage("ls", $('#job_source_path').val());
+});
+
+$("body").on('click', '#job_target_path_ls_btn', function(e) {
+  e.preventDefault();
+  globalSendCommandPage("ls", $('#job_target_path').val());
+});
+
+function make_job_list(data) {
+  str = '';
+  str = '<table id="result_table" class="table table-sm tableRowHover"  ><thead class="thead-dark"><tr>';
+  
+  str += j_th('ID', '5');
+  str += j_th('Name', '5');
+  str += j_th('Command', '5');
+  str += j_th('Path', '40');
+  str += j_th('Last', '10');
+  str += j_th('Scheduler', '20');
+  str += j_th('Process', '10');
+  str += j_th('Action', '5');
+  str += '</tr></thead><tbody id="list">';
+  
+  if (data.length == 0) str += '<tr><td colspan="6"><h4>작업이 없습니다.</h4></td></tr>';
+
+  //str = ''
+  for (i in data) {
+    console.log(data[i])
+    str += '<tr class="chover" style="cursor: pointer;" data-toggle="collapse" data-target="#collapse_' + i + '" aria-expanded="true" >';
+
+    str += j_td(data[i].id, '5');
+    str += j_td(data[i].name, '5');
+    str += j_td(data[i].command, '5');
+   
+    tmp = j_row_start();
+    tmp += j_info_text("Source", data[i].source_path, '3', '9');
+    tmp += j_info_text("Target", data[i].target_path, '3', '9');
+    tmp += j_row_end();
+    str += j_td(tmp, '40');
+    
+    tmp = '';
+    if (data[i].last_run_time != null) {
+      tmp = data[i].last_run_time + '<br>' + data[i].last_file_count + '개 파일'
+    } else {
+      tmp = '--';
+    }
+    str += j_td(tmp, '10');
+    tmp1 = null;
+    if (data[i].schedule_mode == 'none') {
+      tmp1 = "스케쥴 없음";
+      sched_str = tmp1;
+    } else if (data[i].schedule_mode == 'startup') {
+      tmp1 = "시작시 한번 실행";
+      sched_str = tmp1;
+    } else if (data[i].schedule_mode == 'scheduler') {
+      sched_str = "스케쥴링";
+      tmp1 = '<input id="use_checkbox|'+data[i].id+'" type="checkbox" data-id='+data[i].id+' data-toggle="toggle" data-on="On" data-off="Off" data-onstyle="danger" data-offstyle="info" data-size="small" ' + ((data[i].scheduler_is_include) ? 'checked' : '') + '>';
+      if (data[i].scheduler_is_include) {
+        tmp1 += (data[i].scheduler_is_running) ? "<br>실행중" : "<br>대기중";
+      }
+    }
+    str += j_td(tmp1, '20');
+    
+    if (data[i].process) {
+      str += j_td('Yes', '10');
+    } else {
+      str += j_td('-', '5');
+    }
+    
+    tmp = j_button('job_execute_btn', '메뉴', {'id':data[i].id, 'idx':i}, 'warning', false, false, 'context_menu');
+    str += j_td(tmp, '10');
+    str += '</tr>';
+
+    str += '<tr class="collapse tableRowHoverOff" style="cursor: pointer;"  id="collapse_' + i + '">';
+    str += j_td('', '', '', '3');
+    str += '<td colspan="1">';
+    str += j_row_start();
+    str += j_info_text("Description", data[i].description, '3', '9');
+    str += j_info_text("스케쥴 모드", sched_str, '3', '9');
+    str += j_info_text("스케쥴 주기", data[i].schedule_interval, '3', '9');
+    str += j_info_text("스케쥴 자동", (data[i].schedule_auto_start)?"시작시 자동 등록" : "-", '3', '9');
+    str += j_info_text("유저옵션", data[i].option_user, '3', '9');
+    str += j_row_end();
+    str += j_td('', '', '', '3');
+    str += '</td>';
+    str += '</tr>'
+  }
+  str += '</table>';
+  $('#job_list_div').html(str);
+  $('input[id^="use_checkbox|"]').bootstrapToggle();
+}
+
+
+$("body").on('change', 'input[id^="use_checkbox|"]', function(e){
+  e.preventDefault();
+  globalSendCommandPage('task_sched', $(this).data('id'), $(this).prop('checked'));
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+</script>    
+{% endblock %}
