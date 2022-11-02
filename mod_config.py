@@ -142,7 +142,7 @@ class ModuleConfig(PluginModuleBase):
     def web_start(self):
         cmd = SupportRclone.rclone_cmd() + [
             'rcd', '--rc-web-gui',
-            f"--rc-addr=localhost:{P.ModelSetting.get('web_port')}",
+            f"--rc-addr=0.0.0.0:{P.ModelSetting.get('web_port')}",
             f"--rc-user={P.ModelSetting.get('web_user')}", 
             f"--rc-pass={P.ModelSetting.get('web_pass')}", 
             '--rc-serve', '--rc-allow-origin=*',

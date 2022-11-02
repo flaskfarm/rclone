@@ -16,8 +16,8 @@
 
   <img src="https://media.discordapp.net/attachments/973582802102648882/1036571261339447336/unknown.png" width="30%" />
 
-  - `도메인/rclone_web` 으로 접속  
-  - http://localhost:설정포트
+  - `도메인/rclone_web` 으로 접속
+  - FF가 실행되고 있는 곳의 설정포트에 접근 가능해야 한다.
   - admin / password 로그인 후 rclone 에 연결된다.
 
   
