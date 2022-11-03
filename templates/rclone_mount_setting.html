@@ -67,8 +67,8 @@ $(document).ready(function() {
       }
     },
     items: {
-      "ls_source": {name: "소스 폴더 확인", icon: "fa-folder"},
-      "ls_target": {name: "타겟 폴더 확인", icon: "fa-folder"},
+      "ls_source": {name: "리모트 폴더 확인", icon: "fa-folder"},
+      "ls_target": {name: "로컬 폴더 확인", icon: "fa-folder"},
       "sep1": "---------",
       "edit": {name: "마운트 정보 편집", icon: "edit"},
       "delete": {name: "마운트 정보 삭제", icon: "delete"},
@@ -137,8 +137,8 @@ function make_mount_list(data) {
       str += j_td(data[i].id, '5');
       str += j_td(data[i].name, '5');
       tmp = j_row_start();
-      tmp += j_info_text("Source", data[i].remote_path, '3', '9');
-      tmp += j_info_text("Target", data[i].local_path, '3', '9');
+      tmp += j_info_text("Remote", data[i].remote_path, '3', '9');
+      tmp += j_info_text("Local", data[i].local_path, '3', '9');
       tmp += j_row_end();
       str += j_td(tmp, '40');
       tmp = '';
