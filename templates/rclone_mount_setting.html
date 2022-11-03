@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
 
-{{ macros.m_button_group([['mount_add_btn', 'SERVE 추가'], ['globalReloadBtn', '새로고침']])}}
+{{ macros.m_button_group([['mount_add_btn', '마운트 추가'], ['globalReloadBtn', '새로고침']])}}
 {{ macros.m_row_start('5') }}
 {{ macros.m_row_end() }}
 <div id="mount_list_div"></div>
 
-{{ macros.m_modal_start('mount_add_modal', 'SERVE 추가', 'modal-lg') }}
+{{ macros.m_modal_start('mount_add_modal', '마운트 추가', 'modal-lg') }}
   <form id='mount_setting'>
   {{ macros.setting_input_text('mount_name', 'Name', desc=['생략시 ID']) }}
   {{ macros.setting_input_text_and_buttons('mount_remote_path', 'Remote Path', [['mount_remote_path_ls_btn', '폴더 확인']], value='/', desc=None) }}
@@ -36,7 +36,7 @@ $(document).ready(function() {
       idx = $(this).data('idx');
       info = current_data.mount_list[idx];
       if (key == 'delete') {
-        globalConfirmModal(db_id + ' SERVE 삭제', "SERVE 정보를 삭제하시겠습니까?", function() {
+        globalConfirmModal(db_id + ' 마운트 삭제', "마운트 정보를 삭제하시겠습니까?", function() {
           globalSendCommand("mount_delete", db_id, null, null, function(ret) {
             if (ret.ret == 'success') {
               refresh();
@@ -52,7 +52,7 @@ $(document).ready(function() {
         $('#mount_cache_dir').val(info.cache_dir);
         $('input:radio[name="mount_start_mode"][value="'+info.start_mode+'"]').attr('checked',true);
         $('input:radio[name="mount_finish_mode"][value="'+info.finish_mode+'"]').attr('checked',true);
-        $('#mount_add_modal_title').html("SERVE 정보 수정");
+        $('#mount_add_modal_title').html("마운트 정보 수정");
         $("#mount_add_modal").modal({backdrop: 'static', keyboard: false}, 'show');
       } else if (key == 'ls_source') {
         globalSendCommand("ls", info.remote_path);
@@ -70,11 +70,11 @@ $(document).ready(function() {
       "ls_source": {name: "소스 폴더 확인", icon: "fa-folder"},
       "ls_target": {name: "타겟 폴더 확인", icon: "fa-folder"},
       "sep1": "---------",
-      "edit": {name: "SERVE 정보 편집", icon: "edit"},
-      "delete": {name: "SERVE 정보 삭제", icon: "delete"},
+      "edit": {name: "마운트 정보 편집", icon: "edit"},
+      "delete": {name: "마운트 정보 삭제", icon: "delete"},
       "sep2": "---------",
-      "execute": {name: "SERVE 실행", icon: "fa-play"},
-      "stop": {name: "SERVE 중지", icon: "fa-stop"},
+      "execute": {name: "마운트 실행", icon: "fa-play"},
+      "stop": {name: "마운트 중지", icon: "fa-stop"},
       "sep3": "---------",
       "log": {name: "로그", icon: "edit"},
     }
