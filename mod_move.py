@@ -224,9 +224,7 @@ class ModelRcloneFile(ModelBase):
     @classmethod
     def make_query(cls, req, order='desc', search='', option1='all', option2='all'):
         with F.app.app_context():
-            query = F.db.session.query(cls)
             query1 = cls.make_query_search(F.db.session.query(cls), search, cls.name)
-
             query2 = cls.make_query_search(F.db.session.query(cls), search, cls.folder)
             query = query1.union(query2)
 
