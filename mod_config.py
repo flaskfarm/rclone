@@ -119,10 +119,6 @@ class ModuleConfig(PluginModuleBase):
                     P.logger.error(traceback.format_exc())    
                     ret['ret'] = 'warning'
                     ret['msg'] = '삭제 실패'
-        
-
-
-
         return jsonify(ret)
 
 
@@ -171,3 +167,27 @@ class ModuleConfig(PluginModuleBase):
         ret.append(one)
 
         return ret 
+
+
+    def remote_ls(self, remote_path):
+        ret = {'ret':'success'}
+        tmp = remote_path.split(':')
+        if len(tmp) == 1:
+            if os.path.exists(remote_path):
+                ret['modal'] = '\n'.join(os.listdir(remote_path))
+                ret['title'] = remote_path
+            else:
+                ret['ret'] = 'warning'
+                ret['msg'] = 'NOT EXISTS'
+        elif len(tmp) == 2:
+            lsjson = SupportRclone.lsf(remote_path)
+            if lsjson != None:
+                ret['json'] = lsjson
+                ret['title'] = remote_path
+            else:
+                ret['msg'] = "실패"
+                ret['ret'] = 'warning'
+        else:
+            ret['ret'] = 'warning'
+            ret['msg'] = '실패'
+        return ret

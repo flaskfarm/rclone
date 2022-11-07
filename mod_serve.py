@@ -32,25 +32,7 @@ class ModuleServe(PluginModuleBase):
             for item in ret['data']['serve_list']:
                 item['process'] = (self.process_check(item) != None)
         elif command == 'ls':
-            tmp = arg1.split(':')
-            if len(tmp) == 1:
-                if os.path.exists(arg1):
-                    ret['modal'] = '\n'.join(os.listdir(arg1))
-                    ret['title'] = arg1
-                else:
-                    ret['ret'] = 'warning'
-                    ret['msg'] = 'NOT EXISTS'
-            elif len(tmp) == 2:
-                lsjson = SupportRclone.lsjson(arg1)
-                if lsjson != None:
-                    ret['json'] = lsjson
-                    ret['title'] = arg1
-                else:
-                    ret['msg'] = "실패"
-                    ret['ret'] = 'warning'
-            else:
-                ret['ret'] = 'warning'
-                ret['msg'] = '실패'
+            ret = self.get_module('config').remote_ls(arg1)
         elif command == 'serve_delete':
             if ModelRcloneServe.delete_by_id(arg1):
                 ret['msg'] = "삭제하였습니다."

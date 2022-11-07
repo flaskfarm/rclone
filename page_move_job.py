@@ -38,21 +38,7 @@ class PageMoveJob(PluginPageBase):
                 ret['ret'] = 'warning'
                 ret['msg'] = "삭제 실패"
         elif command == 'ls':
-            #P.logger.error(arg1)
-            tmp = arg1.split(':')
-            if len(tmp) == 1:
-                if os.path.exists(arg1):
-                    ret['modal'] = '\n'.join(os.listdir(arg1))
-                    ret['title'] = arg1
-                else:
-                    ret['ret'] = 'warning'
-                    ret['msg'] = 'NOT EXISTS'
-            elif len(tmp) == 2:
-                ret['json'] = SupportRclone.lsjson(arg1)
-                ret['title'] = arg1
-            else:
-                ret['ret'] = 'warning'
-                ret['msg'] = '실패'
+            ret = self.get_module('config').remote_ls(arg1)
         elif command == 'execute':
             #db_item = ModelRcloneJob.get_by_id(arg1)
             call_id = f"rclone_move_{arg1}"
