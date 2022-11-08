@@ -1,5 +1,5 @@
 title: "Rclone"
-version: "1.0.0"
+version: "1.0.1"
 package_name: "rclone"
 developer: "flaskfarm"
 description: "Rclone을 좀 더 쉽게 사용하기 위한 플러그인"
