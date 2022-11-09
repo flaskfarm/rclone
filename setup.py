@@ -2,7 +2,7 @@ setting = {
     'filepath' : __file__,
     'use_db': True,
     'use_default_setting': True,
-    'home_module': 'config',
+    'home_module': None,
     'menu': {
         'uri': __package__,
         'name': 'Rclone',
@@ -66,8 +66,8 @@ from plugin import *
 P = create_plugin_instance(setting)
 try:
     from .mod_config import ModuleConfig
-    from .mod_move import ModuleMove
     from .mod_mount import ModuleMount
+    from .mod_move import ModuleMove
     from .mod_serve import ModuleServe
     P.set_module_list([ModuleConfig, ModuleMove, ModuleMount, ModuleServe])
 except Exception as e:
