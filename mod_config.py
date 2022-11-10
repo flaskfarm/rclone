@@ -56,8 +56,12 @@ class ModuleConfig(PluginModuleBase):
             ret['msg'] = '실행하였습니다.'
         elif command == 'web_stop':
             process = SupportSubprocess.get_instance_by_call_id(self.WEB_CALL_ID)
-            process.process_close()
-            ret['msg'] = '중지하였습니다.'
+            if process != None:
+                process.process_close()
+                ret['msg'] = '중지하였습니다.'
+            else:
+                ret['ret'] = 'warning'
+                ret['msg'] = '실행중 상태가 아닙니다.'
         elif command == 'web_install':
             def func():
                 url = 'https://github.com/rclone/rclone-webui-react/releases/download/v2.0.5/currentbuild.zip'
