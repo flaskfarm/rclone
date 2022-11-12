@@ -137,7 +137,12 @@ class ModuleConfig(PluginModuleBase):
             self.web_start()
 
     def rclone_init(self):
-        SupportRclone.initialize(P.ModelSetting.get('rclone_path'), ToolUtil.make_path(P.ModelSetting.get('rclone_config_path')))
+        try:
+            # celery 때문에 init()로 옮겼다.
+            # db 생성 전에 사용하기 떄문에 에러 발생
+            SupportRclone.initialize(P.ModelSetting.get('rclone_path'), ToolUtil.make_path(P.ModelSetting.get('rclone_config_path')))
+        except:
+            pass
 
 
     def web_start(self):
