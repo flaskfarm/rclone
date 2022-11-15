@@ -92,7 +92,6 @@ function make_list(data) {
     str += '<tr><td colspan="6"><h4>데이터가 없습니다.</h4></td></tr>';
 
   for (i in data) {
-    console.log(data[i])
     str += '<tr class="" style="cursor: pointer;">';
     str += j_td(data[i].id, '5');
     str += j_td(data[i].job_id, '5');
@@ -182,7 +181,6 @@ $('body').on('click', '#db_remove_incomplete_btn', (e) => {
 
 $('body').on('click', '#db_add_incomplete_btn', (e) => {
   e.preventDefault();
-  console.log(current_page)
   globalSendCommand("program_list_command", "add_incomplete");
   globalRequestSearch(current_page);
 });
