@@ -94,9 +94,9 @@ class ModuleMount(PluginModuleBase):
                     fuse_unmount_command = ['fusermount', '-uz', db_item.local_path]
                     p1 = subprocess.Popen(fuse_unmount_command)
                     p1.wait()
-            except Exception as exception:
-                logger.error('Exception:%s', exception)
-                logger.error(traceback.format_exc())
+            except Exception as e: 
+                P.logger.error(f'Exception:{str(e)}')
+                P.logger.error(traceback.format_exc())   
 
             cmd = SupportRclone.rclone_cmd() + [
                 'mount',
