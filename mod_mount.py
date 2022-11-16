@@ -87,6 +87,17 @@ class ModuleMount(PluginModuleBase):
             if process != None:
                 return {'ret':'warning', 'msg':'실행중인 프로세스가 있습니다.'}
 
+            try:
+                import platform
+                import subprocess
+                if platform.system() == 'Linux':
+                    fuse_unmount_command = ['fusermount', '-uz', db_item.local_path]
+                    p1 = subprocess.Popen(fuse_unmount_command)
+                    p1.wait()
+            except Exception as exception:
+                logger.error('Exception:%s', exception)
+                logger.error(traceback.format_exc())
+
             cmd = SupportRclone.rclone_cmd() + [
                 'mount',
                 db_item.remote_path,
