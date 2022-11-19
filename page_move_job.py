@@ -79,8 +79,8 @@ class PageMoveJob(PluginPageBase):
                         th.start()
                     elif db_item['schedule_mode'] == 'scheduler' and db_item['schedule_auto_start']:
                         self.__sched_add(db_item['id'])
-            except Exception as exception: 
-                logger.error('Exception:%s', exception)
+            except Exception as e: 
+                logger.error(f"Exception:{str(e)}")
                 logger.error(traceback.format_exc())        
         try:
             th = threading.Thread(target=func)

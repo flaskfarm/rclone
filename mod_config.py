@@ -120,7 +120,7 @@ class ModuleConfig(PluginModuleBase):
                     shutil.rmtree(self.WEB_FOLDERPATH)
                     ret['msg'] = "삭제하였습니다."
                 except Exception as e: 
-                    P.logger.error('Exception:%s', e)
+                    P.logger.error(f"Exception:{str(e)}")
                     P.logger.error(traceback.format_exc())    
                     ret['ret'] = 'warning'
                     ret['msg'] = '삭제 실패'
