@@ -124,6 +124,9 @@ class ModuleConfig(PluginModuleBase):
                     P.logger.error(traceback.format_exc())    
                     ret['ret'] = 'warning'
                     ret['msg'] = '삭제 실패'
+        # global btn
+        elif command == 'ls':
+            ret = self.remote_ls(arg1)
         return jsonify(ret)
 
 
