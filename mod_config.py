@@ -127,6 +127,31 @@ class ModuleConfig(PluginModuleBase):
         # global btn
         elif command == 'ls':
             ret = self.remote_ls(arg1)
+        elif command == 'size':
+            ret = {'ret':'success'}
+            tmp = arg1.split(':')
+            if len(tmp) == 1:
+                if os.path.exists(arg1):
+                    ret['data'] = SupportFile.size_info(arg1)
+                    ret['json'] = ret['data']
+                    ret['title'] = arg1
+                else:
+                    ret['ret'] = 'warning'
+                    ret['msg'] = 'NOT EXISTS'
+            elif len(tmp) == 2:
+                size_info = SupportRclone.size(arg1)
+                if size_info != None:
+                    ret['json'] = size_info
+                    ret['data'] = size_info
+                    ret['title'] = arg1
+                else:
+                    ret['msg'] = "실패"
+                    ret['ret'] = 'warning'
+            else:
+                ret['ret'] = 'warning'
+                ret['msg'] = '실패'
+            return ret
+
         return jsonify(ret)
 
 
