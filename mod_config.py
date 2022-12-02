@@ -23,7 +23,6 @@ class ModuleConfig(PluginModuleBase):
             f"web_port" : "5572",
             f"web_auto_start" : "False",
         }
-        self.rclone_init()
         
 
     def process_menu(self, page_name, req):
@@ -160,9 +159,12 @@ class ModuleConfig(PluginModuleBase):
             self.rclone_init()
         
     def plugin_load(self):
-        
+        self.rclone_init()
         if P.ModelSetting.get_bool('web_auto_start'):
             self.web_start()
+    
+    def plugin_load_celery(self):
+        self.rclone_init()
 
     def rclone_init(self):
         try:
