@@ -5,7 +5,7 @@ setting = {
     'home_module': None,
     'menu': {
         'uri': __package__,
-        'name': 'Rclone',
+        'name': 'RCLONE',
         'list': [
             {
                 'uri': 'config',
