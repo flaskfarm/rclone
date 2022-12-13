@@ -207,10 +207,8 @@ function make_job_list(data) {
     str += j_td(data[i].name, '5');
     str += j_td(data[i].command, '5');
    
-    tmp = j_row_start();
-    tmp += j_info_text("Source", data[i].source_path, '3', '9');
+    tmp = j_info_text("Source", data[i].source_path, '3', '9');
     tmp += j_info_text("Target", data[i].target_path, '3', '9');
-    tmp += j_row_end();
     str += j_td(tmp, '40');
     
     tmp = '';
@@ -229,7 +227,7 @@ function make_job_list(data) {
       sched_str = tmp1;
     } else if (data[i].schedule_mode == 'scheduler') {
       sched_str = "스케쥴링";
-      tmp1 = '<input id="use_checkbox|'+data[i].id+'" type="checkbox" data-id='+data[i].id+' data-toggle="toggle" data-on="On" data-off="Off" data-onstyle="danger" data-offstyle="info" data-size="small" ' + ((data[i].scheduler_is_include) ? 'checked' : '') + '>';
+      tmp1 = '<input id="use_checkbox|'+data[i].id+'" type="checkbox" data-id='+data[i].id+' data-toggle="toggle" data-on="On" data-off="Off" data-onstyle="primary" data-offstyle="secondary" data-size="small" ' + ((data[i].scheduler_is_include) ? 'checked' : '') + '>';
       if (data[i].scheduler_is_include) {
         tmp1 += (data[i].scheduler_is_running) ? "<br>실행중" : "<br>대기중";
       }
@@ -249,14 +247,12 @@ function make_job_list(data) {
     str += '<tr class="collapse tableRowHoverOff" style="cursor: pointer;"  id="collapse_' + i + '">';
     str += j_td('', '', '', '3');
     str += '<td colspan="1">';
-    str += j_row_start();
     str += j_info_text("Description", data[i].description, '3', '9');
     str += j_info_text("스케쥴 모드", sched_str, '3', '9');
     str += j_info_text("스케쥴 주기", data[i].schedule_interval, '3', '9');
     str += j_info_text("스케쥴 자동", (data[i].schedule_auto_start)?"시작시 자동 등록" : "-", '3', '9');
     str += j_info_text("유저옵션", data[i].option_user, '3', '9');
-    str += j_row_end();
-    str += j_td('', '', '', '3');
+    str += j_td('', '', '', '4');
     str += '</td>';
     str += '</tr>'
   }
