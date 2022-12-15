@@ -135,10 +135,8 @@ function make_mount_list(data) {
       str += '<tr class="chover" style="cursor: pointer;" data-toggle="collapse" data-target="#collapse_' + i + '" aria-expanded="true" >';
       str += j_td(data[i].id, '5');
       str += j_td(data[i].name, '5');
-      tmp = j_row_start();
-      tmp += j_info_text("Remote", data[i].remote_path, '3', '9');
+      tmp = j_info_text("Remote", data[i].remote_path, '3', '9');
       tmp += j_info_text("Local", data[i].local_path, '3', '9');
-      tmp += j_row_end();
       str += j_td(tmp, '40');
       tmp = '';
       if (data[i].start_mode == 'none') tmp = '안함';
@@ -159,10 +157,8 @@ function make_mount_list(data) {
       str += '<tr class="collapse tableRowHoverOff" style="cursor: pointer;"  id="collapse_' + i + '">';
       str += j_td('', '', '', '2');
       str += '<td colspan="3">';
-      str += j_row_start();
       str += j_info_text("cache_dir", data[i].cache_dir, '2', '9');
       str += j_info_text("옵션", data[i].option, '2', '9');
-      str += j_row_end();
       str += j_td('', '', '', '2');
       str += '</td>';
       str += '</tr>'
