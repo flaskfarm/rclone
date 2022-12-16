@@ -6,6 +6,7 @@
 {{ macros.m_row_end() }}
 {{ macros.m_hr() }}
 <form id="setting">
+{{ macros.setting_checkbox('move_setting_status_show_filelist', '상태창에 파일목록 표시', value=arg['move_setting_status_show_filelist'], desc=['파일 수가 많을 경우 웹이 느려집니다.']) }}
 {{ macros.setting_input_textarea('option_move', 'Move 기본 옵션', desc=None, 
 value=arg['option_move'], row='5') }}
 {{ macros.setting_input_textarea('option_copy', 'Copy 기본 옵션', desc=None, 

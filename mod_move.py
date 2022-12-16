@@ -24,6 +24,7 @@ class PageMoveSetting(PluginPageBase):
             'option_move' : '--transfers=4 --checkers=8 --delete-empty-src-dirs --create-empty-src-dirs --delete-after --drive-chunk-size=256M',
             'option_copy' : '--transfers=4 --checkers=8 --create-empty-src-dirs --drive-chunk-size=256M',
             'option_sync' : '--transfers=4 --checkers=8 --create-empty-src-dirs --drive-chunk-size=256M',
+            'move_setting_status_show_filelist': 'True',
         }
 
 class PageMoveList(PluginPageBase):

@@ -65,7 +65,8 @@ class PageMoveStatus(PluginPageBase):
 
                 job = ModelRcloneJob.get_by_id(job_id)
                 job.last_run_time = datetime.now()
-                job.last_file_count = len(ts.file_ids)
+                #job.last_file_count = len(ts.file_ids)
+                job.last_file_count = ts.file_count
                 job.save()
 
                 if job.system_command_id_after != '':
@@ -137,7 +138,10 @@ class PageMoveStatus(PluginPageBase):
                     db_file = ModelRcloneFile(job_id, folder, name, ts.uuid)
                     db_file.save()
                     #if db_file.id not in ts.files:
-                    ts.file_ids.append(db_file.id)
+                    # 2022-12-16
+                    if P.ModelSetting.get_bool('move_setting_status_show_filelist'):
+                        ts.file_ids.append(db_file.id)
+                    ts.file_count += 1
 
                 db_file.percent = int(match.group('percent'))
                 db_file.size = match.group('size')
@@ -217,6 +221,7 @@ class TransStatus(object):
         self.files = None
         self.completed_time = None
         self.is_completed = False
+        self.file_count = 0
 
     def set_finish(self):
         self.completed_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
