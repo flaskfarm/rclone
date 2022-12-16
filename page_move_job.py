@@ -123,7 +123,7 @@ class PageMoveJob(PluginPageBase):
                 self.change_path(db_item.source_path),
                 self.change_path(db_item.target_path),
             ]
-            cmd += self.__OPTION_STATIC.split(' ')
+            cmd += self.__OPTION_STATIC.replace('1s', f"{P.ModelSetting.get('move_setting_status_show_interval')}s").split(' ')
             cmd += self.get_module('config').get_user_command_list(db_item.option_user)
             #P.logger.info(d(cmd))
             db_item.process_command = ' '.join(cmd)
