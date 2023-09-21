@@ -51,7 +51,7 @@ class PageMoveList(PluginPageBase):
     def process_command(self, command, arg1, arg2, arg3, req):
         ret = {'ret':'success'}
         if command == 'db_delete':
-            if ModelRcloneFile.delete_all(days=arg1):
+            if ModelRcloneFile.delete_all(day=arg1):
                 ret['msg'] = '삭제하였습니다.'
             else:
                 ret['msg'] = '삭제 실패'
